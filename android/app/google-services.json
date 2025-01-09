@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "10091030276",
+    "project_id": "convene-9430a",
+    "storage_bucket": "convene-9430a.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:10091030276:android:f623a18f1e29a634875251",
+        "android_client_info": {
+          "package_name": "com.convene.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBedrVl1XM_VTGRl2Ew9Po67nk0f5uoqeU"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
