@@ -10,6 +10,7 @@ import 'package:convene/utils/colors.dart';
 import 'package:convene/screens/signin.dart';
 import 'package:convene/screens/splash_screen.dart';
 import 'package:convene/screens/login.dart';
+import 'package:convene/screens/forgot_password_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -31,14 +32,14 @@ class MyApp extends StatelessWidget {
       ),
       routes: {
         '/splash-screen': (context) => ZoomSplashScreen(),
-        '/login': (context) => Loginscreen(),
+        '/login': (context) => LoginScreen(),
         '/signIn': (context) => SignInScreen(),
         '/home': (context) => HomeScreen(),
         '/main': (context) => MainScreen(),
         '/video-call': (context) => VideoCallScreen(),
         '/history-meeting-screen': (context) => HistoryMeetingScreen(),
-        '/meeting-screen': (context) =>
-            MeetingScreen(), // Remove the extra colon here
+        '/meeting-screen': (context) => MeetingScreen(), 
+        '/forgot-password': (context) => const ForgotPasswordScreen(),
       },
       initialRoute: '/splash-screen',
       home: StreamBuilder(

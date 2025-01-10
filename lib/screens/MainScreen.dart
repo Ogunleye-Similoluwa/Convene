@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-// import 'package:zoom_clone/utils/colors.dart';
+import 'package:animated_emoji/animated_emoji.dart';
+import '../utils/colors.dart';
 
 import '../widgets/custom_button.dart';
 
@@ -9,49 +10,136 @@ class MainScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Convene: Video Conference App'),
-      ),
-      body: Padding(
-        padding: const EdgeInsets.all(20.0),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            const Text(
-              'Start or join a meeting',
-              style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 20),
-            Image.network(
-              'https://raw.githubusercontent.com/shubhamsingh74/Zoom-Clone/master/assets/images/onboarding.png',
-              fit: BoxFit.cover,
-            ),
-            const SizedBox(height: 40),
-            CustomButton(
-              text: 'Login',
-              onPressed: () {
-                Navigator.pushNamed(context, '/login');
-              },
-            ),
-            const SizedBox(height: 20),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: <Widget>[
-                const Text('Does not have an account?'),
-                TextButton(
-                  onPressed: () {
-                    Navigator.pushNamed(context, '/signIn');
-                  },
-                  child: const Text(
-                    'Sign up',
-                    style: TextStyle(fontSize: 20, color: Color.fromARGB(255, 185, 213, 240)),
+      backgroundColor: backgroundColor,
+      body: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 24.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              const SizedBox(height: 40),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(
+                    Icons.videocam_rounded,
+                    size: 32,
+                    color: buttonColor,
                   ),
+                  const SizedBox(width: 12),
+                  Text(
+                    'Convene',
+                    style: TextStyle(
+                      color: textColor,
+                      fontSize: 28,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 60),
+              Container(
+                padding: const EdgeInsets.all(24),
+                decoration: BoxDecoration(
+                  color: secondaryBackgroundColor,
+                  borderRadius: BorderRadius.circular(20),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.2),
+                      blurRadius: 10,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
                 ),
-              ],
-            ),
-          ],
+                child: Column(
+                  children: [
+                     SizedBox(
+                      height: 200,
+                      child: Center(
+                        child: AnimatedEmoji(
+                          AnimatedEmojis.bubbles,
+                          size: 128,
+                          repeat: true,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 24),
+                    Text(
+                      'Premium Video Meetings',
+                      style: TextStyle(
+                        color: textColor,
+                        fontSize: 24,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    Text(
+                      'Connect with your team anytime, anywhere',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        color: textColor.withOpacity(0.7),
+                        fontSize: 16,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const Spacer(),
+              Container(
+                padding: const EdgeInsets.all(24),
+                decoration: BoxDecoration(
+                  color: secondaryBackgroundColor,
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    ElevatedButton(
+                      onPressed: () {
+                        Navigator.pushNamed(context, '/login');
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: buttonColor,
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                      child: const Text(
+                        'Login',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    OutlinedButton(
+                      onPressed: () {
+                        Navigator.pushNamed(context, '/signIn');
+                      },
+                      style: OutlinedButton.styleFrom(
+                        side: BorderSide(color: buttonColor),
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                      child: Text(
+                        'Create Account',
+                        style: TextStyle(
+                          color: buttonColor,
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 32),
+            ],
+          ),
         ),
       ),
     );
