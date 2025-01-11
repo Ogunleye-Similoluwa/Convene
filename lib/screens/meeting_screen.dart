@@ -7,6 +7,7 @@ import 'package:jitsi_meet_wrapper/jitsi_meet_wrapper.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../utils/colors.dart';
 import 'package:permission_handler/permission_handler.dart';
+import 'dart:io' show Platform;
 
 class MeetingScreen extends StatefulWidget {
   const MeetingScreen({super.key});
@@ -32,8 +33,6 @@ class _MeetingScreenState extends State<MeetingScreen> {
   }
 
   Future<void> _showPermissionDialog() async {
-    Map<Permission, bool> permissions = await PermissionService.checkIndividualPermissions();
-    
     if (!mounted) return;
 
     return showDialog(
@@ -52,42 +51,36 @@ class _MeetingScreenState extends State<MeetingScreen> {
                 child: ListBody(
                   children: <Widget>[
                     Text(
-                      'Camera and microphone access is required for video calls. Please enable them in Settings.',
+                      'Please allow camera and microphone access to use video calls.',
                       style: TextStyle(color: textColor),
                     ),
                     SizedBox(height: 16),
-                    _buildPermissionListItem(
-                      Icons.camera_alt,
-                      'Camera',
-                      permissions[Permission.camera] ?? false,
-                      () async {
-                        if (await Permission.camera.isPermanentlyDenied) {
-                          // Show settings dialog
-                          _showSettingsDialog();
-                        } else {
-                          bool granted = await PermissionService.requestPermission(Permission.camera);
-                          setDialogState(() {
-                            permissions[Permission.camera] = granted;
-                          });
-                          setState(() {});
-                        }
-                      },
-                    ),
-                    _buildPermissionListItem(
-                      Icons.mic,
-                      'Microphone',
-                      permissions[Permission.microphone] ?? false,
-                      () async {
-                        if (await Permission.microphone.isPermanentlyDenied) {
-                          // Show settings dialog
-                          _showSettingsDialog();
-                        } else {
-                          bool granted = await PermissionService.requestPermission(Permission.microphone);
-                          setDialogState(() {
-                            permissions[Permission.microphone] = granted;
-                          });
-                          setState(() {});
-                        }
+                    FutureBuilder<Map<Permission, bool>>(
+                      future: PermissionService.checkIndividualPermissions(),
+                      builder: (context, snapshot) {
+                        final permissions = snapshot.data ?? {};
+                        return Column(
+                          children: [
+                            _buildPermissionListItem(
+                              Icons.camera_alt,
+                              'Camera',
+                              permissions[Permission.camera] ?? false,
+                              () async {
+                                bool granted = await PermissionService.requestPermission(Permission.camera);
+                                setDialogState(() {});  // Trigger rebuild
+                              },
+                            ),
+                            _buildPermissionListItem(
+                              Icons.mic,
+                              'Microphone',
+                              permissions[Permission.microphone] ?? false,
+                              () async {
+                                bool granted = await PermissionService.requestPermission(Permission.microphone);
+                                setDialogState(() {});  // Trigger rebuild
+                              },
+                            ),
+                          ],
+                        );
                       },
                     ),
                   ],
@@ -96,28 +89,24 @@ class _MeetingScreenState extends State<MeetingScreen> {
               actions: <Widget>[
                 TextButton(
                   child: Text(
-                    'Open Settings',
-                    style: TextStyle(color: buttonColor),
-                  ),
-                  onPressed: () async {
-                    await openAppSettings();
-                  },
-                ),
-                TextButton(
-                  child: Text(
                     'Done',
                     style: TextStyle(color: buttonColor),
                   ),
-                  onPressed: () {
-                    if (!permissions.values.contains(false)) {
-                      Navigator.of(context).pop(true);
+                  onPressed: () async {
+                    bool hasPermissions = await PermissionService.checkPermissions();
+                    if (hasPermissions) {
+                      Navigator.of(context).pop();
                     } else {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text('Please enable permissions in Settings to continue'),
-                          backgroundColor: errorColor,
-                        ),
-                      );
+                      if (Platform.isIOS) {
+                        await openAppSettings();
+                      } else {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text('Please grant all permissions to continue'),
+                            backgroundColor: errorColor,
+                          ),
+                        );
+                      }
                     }
                   },
                 ),

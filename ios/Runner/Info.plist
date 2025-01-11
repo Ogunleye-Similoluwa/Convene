@@ -46,9 +46,9 @@
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
 	<key>NSCameraUsageDescription</key>
-	<string>Camera access is required for video calls</string>
+	<string>Camera access is needed for video calls</string>
 	<key>NSMicrophoneUsageDescription</key>
-	<string>Microphone access is required for voice calls</string>
+	<string>Microphone access is needed for voice calls</string>
 	<key>NSCalendarUsageDescription</key>
 	<string>Calendar access is required to schedule meetings</string>
 	<key>NSContactsUsageDescription</key>
