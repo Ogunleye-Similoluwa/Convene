@@ -65,7 +65,7 @@ class MainScreen extends StatelessWidget {
                     ),
                     const SizedBox(height: 24),
                     Text(
-                      'Premium Video Meetings',
+                      'Premium Video Meetings in style',
                       style: TextStyle(
                         color: textColor,
                         fontSize: 24,
@@ -74,7 +74,7 @@ class MainScreen extends StatelessWidget {
                     ),
                     const SizedBox(height: 12),
                     Text(
-                      'Connect with your team anytime, anywhere',
+                      'Connect with your team anytime, anywhere, and on any device.',
                       textAlign: TextAlign.center,
                       style: TextStyle(
                         color: textColor.withOpacity(0.7),
