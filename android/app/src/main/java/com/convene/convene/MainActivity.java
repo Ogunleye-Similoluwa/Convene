@@ -1,4 +1,4 @@
-package com.convene.convene;
+package com.convene.app;
 
 import io.flutter.embedding.android.FlutterActivity;
 

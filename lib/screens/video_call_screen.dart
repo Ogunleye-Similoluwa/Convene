@@ -1,7 +1,7 @@
+import 'package:agora_rtc_engine/agora_rtc_engine.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:jitsi_meet_wrapper/jitsi_meet_wrapper.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:animated_emoji/animated_emoji.dart';
 import '../utils/colors.dart';
@@ -9,8 +9,12 @@ import '../utils/utils.dart';
 import '../services/permission_service.dart';
 import 'package:permission_handler/permission_handler.dart';
 
+// You'll need to get this from your Agora Console
+const String appId = "2dd1e869fc9f4bb480c6bfcbc71f8aef";
+
 class VideoCallScreen extends StatefulWidget {
-  const VideoCallScreen({super.key});
+  final String? roomCode;
+  const VideoCallScreen({this.roomCode, super.key});
 
   @override
   State<VideoCallScreen> createState() => _VideoCallScreenState();
@@ -23,14 +27,52 @@ class _VideoCallScreenState extends State<VideoCallScreen> {
   bool isLoading = false;
   final User? user = FirebaseAuth.instance.currentUser;
   String? _lastUsedRoom;
+  
+  int? _remoteUid;
+  bool _localUserJoined = false;
+  late RtcEngine _engine;
 
   @override
   void initState() {
     super.initState();
-    print('initState');
-
+    if (widget.roomCode != null) {
+      roomController.text = widget.roomCode!;
+    }
     _loadLastUsedRoom();
     _checkPermissions();
+    _initializeAgora();
+  }
+
+  Future<void> _initializeAgora() async {
+    // Create RTC Engine instance
+    _engine = createAgoraRtcEngine();
+    await _engine.initialize(const RtcEngineContext(
+      appId: appId,
+      channelProfile: ChannelProfileType.channelProfileLiveBroadcasting,
+    ));
+
+    _engine.registerEventHandler(
+      RtcEngineEventHandler(
+        onJoinChannelSuccess: (RtcConnection connection, int elapsed) {
+          debugPrint("Local user joined");
+          setState(() {
+            _localUserJoined = true;
+          });
+        },
+        onUserJoined: (RtcConnection connection, int remoteUid, int elapsed) {
+          debugPrint("Remote user joined");
+          setState(() {
+            _remoteUid = remoteUid;
+          });
+        },
+        onUserOffline: (RtcConnection connection, int remoteUid, UserOfflineReasonType reason) {
+          debugPrint("Remote user left");
+          setState(() {
+            _remoteUid = null;
+          });
+        },
+      ),
+    );
   }
 
   Future<void> _loadLastUsedRoom() async {
@@ -120,15 +162,15 @@ class _VideoCallScreenState extends State<VideoCallScreen> {
                         setState(() => permissions[Permission.calendar] = granted);
                       },
                     ),
-                    _buildPermissionListItem(
-                      Icons.contacts,
-                      'Contacts',
-                      permissions[Permission.contacts] ?? false,
-                      () async {
-                        bool granted = await PermissionService.requestPermission(Permission.contacts);
-                        setState(() => permissions[Permission.contacts] = granted);
-                      },
-                    ),
+                    // _buildPermissionListItem(
+                    //   Icons.contacts,
+                    //   'Contacts',
+                    //   permissions[Permission.contacts] ?? false,
+                    //   () async {
+                    //     bool granted = await PermissionService.requestPermission(Permission.contacts);
+                    //     setState(() => permissions[Permission.contacts] = granted);
+                    //   },
+                    // ),
                   ],
                 ),
               ),
@@ -208,101 +250,58 @@ class _VideoCallScreenState extends State<VideoCallScreen> {
 
   Future<void> _joinMeeting() async {
     try {
-      print('Starting join meeting process...');
-      
       final roomCode = roomController.text.trim();
-      print('Room code: $roomCode');
       
       if (roomCode.isEmpty) {
-        print('Room code is empty');
         showSnackBar(context, 'Please enter a room code', isError: true);
         return;
       }
 
       setState(() => isLoading = true);
-      print('Set loading state to true');
 
-      try {
-        print('Fetching user document...');
-        final userDoc = await FirebaseFirestore.instance
-            .collection('users')
-            .doc(user?.uid)
-            .get();
+      // Configure video encoding parameters
+      await _engine.setVideoEncoderConfiguration(
+        const VideoEncoderConfiguration(
+          dimensions: VideoDimensions(width: 1920, height: 1080),
+          frameRate: 30,
+          bitrate: 3000,
+        ),
+      );
 
-        final userData = userDoc.data();
-        final userName = userData?['username'] ?? 'User';
-        final userEmail = user?.email ?? '';
-        
-        print('User data retrieved - Name: $userName, Email: $userEmail');
+      // Set client role
+      await _engine.setClientRole(role: ClientRoleType.clientRoleBroadcaster);
 
-        print('Creating Jitsi meeting options...');
-        var options = JitsiMeetingOptions(
-          roomNameOrUrl: roomCode,
-          serverUrl: "https://meet.jit.si",
-          subject: "Meeting with $userName",
-          isAudioMuted: isAudioMuted,
-          isVideoMuted: isVideoMuted,
-          userDisplayName: userName,
-          userEmail: userEmail,
-          featureFlags: {
-            "chat.enabled": true,
-            "invite.enabled": true,
-            "recording.enabled": false,
-            "live-streaming.enabled": false,
-            "meeting-name.enabled": true,
-            "meeting-password.enabled": false,
-            "pip.enabled": false,
-            "raise-hand.enabled": true,
-            "tile-view.enabled": true,
-            "toolbox.enabled": true,
-            "welcome-page.enabled": false
-          },
-        );
+      // Enable video
+      await _engine.enableVideo();
+      await _engine.enableAudio();
 
-        print('Attempting to join meeting...');
-        await JitsiMeetWrapper.joinMeeting(
-          options: options,
-          listener: JitsiMeetingListener(
-            onConferenceWillJoin: (url) {
-              print('Conference will join: $url');
-              showSnackBar(context, "Joining meeting...", isError: false);
-            },
-            onConferenceJoined: (url) {
-              print('Conference joined: $url');
-              showSnackBar(context, "Welcome to the meeting!", isError: false);
-            },
-            onConferenceTerminated: (url, error) {
-              print('Conference terminated: $url');
-              if (error != null) print('Error: $error');
-              Navigator.pop(context);
-            },
-          ),
-        );
+      // Set audio and video states based on user preferences
+      await _engine.muteLocalAudioStream(isAudioMuted);
+      await _engine.muteLocalVideoStream(isVideoMuted);
 
-        print('Storing meeting details in Firestore...');
-        await FirebaseFirestore.instance.collection('meetings').add({
-          'roomName': roomCode,
-          'userId': user?.uid,
-          'userName': userName,
-          'userEmail': userEmail,
-          'timestamp': FieldValue.serverTimestamp(),
-        });
-        print('Meeting details stored successfully');
+      // Join the channel
+      await _engine.joinChannel(
+        token: '',
+        channelId: roomCode,
+        uid: 0,
+        options: const ChannelMediaOptions(),
+      );
 
-      } catch (error) {
-        print('Error during meeting setup: $error');
-        print('Stack trace: ${StackTrace.current}');
-        showSnackBar(context, 'Failed to join meeting: $error', isError: true);
-      }
+      // Store meeting details in Firestore
+      await FirebaseFirestore.instance.collection('meetings').add({
+        'roomName': roomCode,
+        'userId': user?.uid,
+        'userName': user?.displayName ?? 'User',
+        'userEmail': user?.email ?? '',
+        'timestamp': FieldValue.serverTimestamp(),
+      });
 
     } catch (error) {
-      print('Critical error: $error');
-      print('Stack trace: ${StackTrace.current}');
-      showSnackBar(context, 'An unexpected error occurred', isError: true);
+      debugPrint('Error joining meeting: $error');
+      showSnackBar(context, 'Failed to join meeting: $error', isError: true);
     } finally {
       if (mounted) {
         setState(() => isLoading = false);
-        print('Set loading state to false');
       }
     }
   }
@@ -320,212 +319,239 @@ class _VideoCallScreenState extends State<VideoCallScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: backgroundColor,
-      body: SafeArea(
-        child: SingleChildScrollView(
-          child: Padding(
-            padding: const EdgeInsets.all(24.0),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Header
-                Row(
+      body: Stack(
+        children: [
+          SafeArea(
+            child: SingleChildScrollView(
+              child: Padding(
+                padding: const EdgeInsets.all(24.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    IconButton(
-                      icon: Icon(Icons.arrow_back, color: textColor),
-                      onPressed: () => Navigator.pop(context),
+                    // Header
+                    Row(
+                      children: [
+                        IconButton(
+                          icon: Icon(Icons.arrow_back, color: textColor),
+                          onPressed: () => Navigator.pop(context),
+                        ),
+                        const SizedBox(width: 16),
+                        Text(
+                          'Join Meeting',
+                          style: TextStyle(
+                            color: textColor,
+                            fontSize: 24,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ],
                     ),
-                    const SizedBox(width: 16),
-                    Text(
-                      'Join Meeting',
-                      style: TextStyle(
-                        color: textColor,
-                        fontSize: 24,
-                        fontWeight: FontWeight.bold,
+                    const SizedBox(height: 32),
+
+                    // Animated Emoji
+                    Center(
+                      child: Container(
+                        height: 120,
+                        width: 120,
+                        decoration: BoxDecoration(
+                          color: secondaryBackgroundColor,
+                          borderRadius: BorderRadius.circular(60),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withOpacity(0.1),
+                              blurRadius: 10,
+                              offset: const Offset(0, 4),
+                            ),
+                          ],
+                        ),
+                        child:  Center(
+                          child: AnimatedEmoji(
+                              AnimatedEmojis.bubbles,
+                            size: 64,
+                            repeat: true,
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 32),
+
+                    // Room Code Input
+                    Container(
+                      padding: const EdgeInsets.all(24),
+                      decoration: BoxDecoration(
+                        color: secondaryBackgroundColor,
+                        borderRadius: BorderRadius.circular(20),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.1),
+                            blurRadius: 10,
+                            offset: const Offset(0, 4),
+                          ),
+                        ],
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Room Code',
+                            style: TextStyle(
+                              color: textColor,
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          const SizedBox(height: 16),
+                          TextField(
+                            controller: roomController,
+                            style: TextStyle(color: textColor),
+                            decoration: InputDecoration(
+                              hintText: 'Enter room code',
+                              hintStyle: TextStyle(color: textColor.withOpacity(0.5)),
+                              prefixIcon: Icon(Icons.meeting_room, color: buttonColor),
+                              suffixIcon: IconButton(
+                                icon: Icon(Icons.content_paste, color: buttonColor),
+                                onPressed: _pasteFromClipboard,
+                              ),
+                              filled: true,
+                              fillColor: backgroundColor,
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(12),
+                                borderSide: BorderSide.none,
+                              ),
+                            ),
+                          ),
+                          if (_lastUsedRoom != null) ...[
+                            const SizedBox(height: 16),
+                            GestureDetector(
+                              onTap: () {
+                                roomController.text = _lastUsedRoom!;
+                              },
+                              child: Row(
+                                children: [
+                                  Icon(Icons.history, color: buttonColor, size: 16),
+                                  const SizedBox(width: 8),
+                                  Text(
+                                    'Last used: $_lastUsedRoom',
+                                    style: TextStyle(
+                                      color: buttonColor,
+                                      fontSize: 14,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 24),
+
+                    // Meeting Settings
+                    Container(
+                      padding: const EdgeInsets.all(24),
+                      decoration: BoxDecoration(
+                        color: secondaryBackgroundColor,
+                        borderRadius: BorderRadius.circular(20),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.1),
+                            blurRadius: 10,
+                            offset: const Offset(0, 4),
+                          ),
+                        ],
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Meeting Settings',
+                            style: TextStyle(
+                              color: textColor,
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          const SizedBox(height: 16),
+                          _buildSettingTile(
+                            icon: Icons.mic,
+                            title: 'Mute Audio',
+                            subtitle: 'Join with audio muted',
+                            value: isAudioMuted,
+                            onChanged: (value) => setState(() => isAudioMuted = value),
+                          ),
+                          const SizedBox(height: 16),
+                          _buildSettingTile(
+                            icon: Icons.videocam,
+                            title: 'Mute Video',
+                            subtitle: 'Join with video muted',
+                            value: isVideoMuted,
+                            onChanged: (value) => setState(() => isVideoMuted = value),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 32),
+
+                    // Join Button
+                    SizedBox(
+                      width: double.infinity,
+                      height: 56,
+                      child: ElevatedButton(
+                        onPressed: isLoading ? null : _joinMeeting,
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: buttonColor,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                          elevation: 2,
+                        ),
+                        child: isLoading
+                            ? SizedBox(
+                                width: 24,
+                                height: 24,
+                                child: CircularProgressIndicator(
+                                  color: Colors.white,
+                                  strokeWidth: 2,
+                                ),
+                              )
+                            : const Text(
+                                'Join Meeting',
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
                       ),
                     ),
                   ],
                 ),
-                const SizedBox(height: 32),
-
-                // Animated Emoji
-                Center(
-                  child: Container(
-                    height: 120,
-                    width: 120,
-                    decoration: BoxDecoration(
-                      color: secondaryBackgroundColor,
-                      borderRadius: BorderRadius.circular(60),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withOpacity(0.1),
-                          blurRadius: 10,
-                          offset: const Offset(0, 4),
-                        ),
-                      ],
-                    ),
-                    child:  Center(
-                      child: AnimatedEmoji(
-                          AnimatedEmojis.bubbles,
-                        size: 64,
-                        repeat: true,
-                      ),
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 32),
-
-                // Room Code Input
-                Container(
-                  padding: const EdgeInsets.all(24),
-                  decoration: BoxDecoration(
-                    color: secondaryBackgroundColor,
-                    borderRadius: BorderRadius.circular(20),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withOpacity(0.1),
-                        blurRadius: 10,
-                        offset: const Offset(0, 4),
-                      ),
-                    ],
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Room Code',
-                        style: TextStyle(
-                          color: textColor,
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      const SizedBox(height: 16),
-                      TextField(
-                        controller: roomController,
-                        style: TextStyle(color: textColor),
-                        decoration: InputDecoration(
-                          hintText: 'Enter room code',
-                          hintStyle: TextStyle(color: textColor.withOpacity(0.5)),
-                          prefixIcon: Icon(Icons.meeting_room, color: buttonColor),
-                          suffixIcon: IconButton(
-                            icon: Icon(Icons.content_paste, color: buttonColor),
-                            onPressed: _pasteFromClipboard,
-                          ),
-                          filled: true,
-                          fillColor: backgroundColor,
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(12),
-                            borderSide: BorderSide.none,
-                          ),
-                        ),
-                      ),
-                      if (_lastUsedRoom != null) ...[
-                        const SizedBox(height: 16),
-                        GestureDetector(
-                          onTap: () {
-                            roomController.text = _lastUsedRoom!;
-                          },
-                          child: Row(
-                            children: [
-                              Icon(Icons.history, color: buttonColor, size: 16),
-                              const SizedBox(width: 8),
-                              Text(
-                                'Last used: $_lastUsedRoom',
-                                style: TextStyle(
-                                  color: buttonColor,
-                                  fontSize: 14,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 24),
-
-                // Meeting Settings
-                Container(
-                  padding: const EdgeInsets.all(24),
-                  decoration: BoxDecoration(
-                    color: secondaryBackgroundColor,
-                    borderRadius: BorderRadius.circular(20),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withOpacity(0.1),
-                        blurRadius: 10,
-                        offset: const Offset(0, 4),
-                      ),
-                    ],
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Meeting Settings',
-                        style: TextStyle(
-                          color: textColor,
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      const SizedBox(height: 16),
-                      _buildSettingTile(
-                        icon: Icons.mic,
-                        title: 'Mute Audio',
-                        subtitle: 'Join with audio muted',
-                        value: isAudioMuted,
-                        onChanged: (value) => setState(() => isAudioMuted = value),
-                      ),
-                      const SizedBox(height: 16),
-                      _buildSettingTile(
-                        icon: Icons.videocam,
-                        title: 'Mute Video',
-                        subtitle: 'Join with video muted',
-                        value: isVideoMuted,
-                        onChanged: (value) => setState(() => isVideoMuted = value),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 32),
-
-                // Join Button
-                SizedBox(
-                  width: double.infinity,
-                  height: 56,
-                  child: ElevatedButton(
-                    onPressed: isLoading ? null : _joinMeeting,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: buttonColor,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(16),
-                      ),
-                      elevation: 2,
-                    ),
-                    child: isLoading
-                        ? SizedBox(
-                            width: 24,
-                            height: 24,
-                            child: CircularProgressIndicator(
-                              color: Colors.white,
-                              strokeWidth: 2,
-                            ),
-                          )
-                        : const Text(
-                            'Join Meeting',
-                            style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                  ),
-                ),
-              ],
+              ),
             ),
           ),
-        ),
+          // Video views
+          if (_remoteUid != null)
+            AgoraVideoView(
+              controller: VideoViewController.remote(
+                rtcEngine: _engine,
+                canvas: VideoCanvas(uid: _remoteUid),
+                connection: RtcConnection(channelId: roomController.text),
+              ),
+            ),
+          if (_localUserJoined)
+            Align(
+              alignment: Alignment.topLeft,
+              child: SizedBox(
+                width: 100,
+                height: 150,
+                child: AgoraVideoView(
+                  controller: VideoViewController(
+                    rtcEngine: _engine,
+                    canvas: const VideoCanvas(uid: 0),
+                  ),
+                ),
+              ),
+            ),
+        ],
       ),
     );
   }
@@ -581,6 +607,8 @@ class _VideoCallScreenState extends State<VideoCallScreen> {
 
   @override
   void dispose() {
+    _engine.leaveChannel();
+    _engine.release();
     roomController.dispose();
     super.dispose();
   }

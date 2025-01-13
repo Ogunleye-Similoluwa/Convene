@@ -69,6 +69,6 @@ class DefaultFirebaseOptions {
     messagingSenderId: '10091030276',
     projectId: 'convene-9430a',
     storageBucket: 'convene-9430a.firebasestorage.app',
-    iosBundleId: 'com.convene.convene',
+    iosBundleId: 'com.convene.app',
   );
 }

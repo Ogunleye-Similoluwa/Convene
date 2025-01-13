@@ -9,7 +9,7 @@
 	<key>PLIST_VERSION</key>
 	<string>1</string>
 	<key>BUNDLE_ID</key>
-	<string>com.convene.convene</string>
+	<string>com.convene.app</string>
 	<key>PROJECT_ID</key>
 	<string>convene-9430a</string>
 	<key>STORAGE_BUCKET</key>

@@ -1,8 +1,9 @@
 import 'dart:math';
+import 'package:convene/screens/video_call_screen.dart';
 import 'package:convene/services/permission_service.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:jitsi_meet_wrapper/jitsi_meet_wrapper.dart';
+// import 'package:jitsi_meet_wrapper/jitsi_meet_wrapper.dart';
 // import '../widgets/home_meeting_button.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../utils/colors.dart';
@@ -28,7 +29,7 @@ class _MeetingScreenState extends State<MeetingScreen> {
   Future<void> _checkPermissions() async {
     bool hasPermissions = await PermissionService.checkPermissions();
     if (!hasPermissions) {
-      _showPermissionDialog();
+      // _showPermissionDialog();
     }
   }
 
@@ -200,93 +201,17 @@ class _MeetingScreenState extends State<MeetingScreen> {
   }
 
   createNewMeeting() async {
+    if (!mounted) return;
+    
     try {
-      print('Starting new meeting creation...');
-      
-      // Check permissions first
-      bool hasPermissions = await PermissionService.checkPermissions();
-      print('Permissions check result: $hasPermissions');
-      
-      if (!hasPermissions) {
-        print('Permissions not granted, showing dialog...');
-        await _showPermissionDialog();
-        hasPermissions = await PermissionService.checkPermissions();
-        print('Permissions after dialog: $hasPermissions');
-        
-        if (!hasPermissions) {
-          print('Still missing permissions');
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('Cannot create meeting without camera and microphone access'),
-              backgroundColor: errorColor,
-            ),
-          );
-          return;
-        }
-      }
-
       setState(() => _isCreatingMeeting = true);
       
       var random = Random();
       String roomName = (random.nextInt(10000000) + 10000000).toString();
-      print('Generated room name: $roomName');
-
-      // Get the current user
+      
       User? user = FirebaseAuth.instance.currentUser;
       if (user != null) {
-        print('Creating meeting with room: $roomName');
-        
-        var options = JitsiMeetingOptions(
-          roomNameOrUrl: roomName,
-          serverUrl: "https://meet.jit.si",  // Make sure using jit.si
-          isAudioMuted: false,
-          isVideoMuted: false,
-          userDisplayName: user.displayName ?? "Host User",
-          userEmail: user.email,
-          featureFlags: {
-            "chat.enabled": true,
-            "meeting-name.enabled": true,
-            "raise-hand.enabled": true,
-            "recording.enabled": false,
-            "live-streaming.enabled": false,
-            "tile-view.enabled": true,
-            "toolbox.enabled": true,
-            "welcome-page.enabled": false,
-            "prejoinpage.enabled": false,  // Skip prejoin page
-          },
-        );
-
-        print('Attempting to join meeting with options...');
-        await JitsiMeetWrapper.joinMeeting(
-          options: options,
-          listener: JitsiMeetingListener(
-            onConferenceWillJoin: (url) {
-              print('Conference will join: $url');
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(content: Text('Joining meeting...'))
-              );
-            },
-            onConferenceJoined: (url) {
-              print('Conference joined successfully: $url');
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(content: Text('Joined meeting!'))
-              );
-            },
-            onConferenceTerminated: (url, error) {
-              print('Conference terminated. URL: $url, Error: $error');
-              if (error != null) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text('Meeting ended: $error'),
-                    backgroundColor: errorColor,
-                  )
-                );
-              }
-            },
-          ),
-        );
-
-        print('Storing meeting details in Firestore...');
+        // Store meeting details in Firestore
         await FirebaseFirestore.instance.collection('meetings').add({
           'roomName': roomName,
           'userId': user.uid,
@@ -294,11 +219,19 @@ class _MeetingScreenState extends State<MeetingScreen> {
           'userEmail': user.email ?? '',
           'createdAt': FieldValue.serverTimestamp(),
         });
-        print('Meeting details stored successfully');
+
+        if (!mounted) return;
+        
+        // Pass the room code to VideoCallScreen
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => VideoCallScreen(roomCode: roomName),
+          ),
+        );
       }
     } catch (error) {
-      print('Error creating meeting: $error');
-      print('Stack trace: ${StackTrace.current}');
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Failed to create meeting: $error'),
@@ -306,7 +239,9 @@ class _MeetingScreenState extends State<MeetingScreen> {
         ),
       );
     } finally {
-      setState(() => _isCreatingMeeting = false);
+      if (mounted) {
+        setState(() => _isCreatingMeeting = false);
+      }
     }
   }
 
