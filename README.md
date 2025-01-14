@@ -1,16 +1,67 @@
-# convene
+# Convene - Video Conferencing App
 
-A video conference application
+<p align="center">
+  <img src="screenshots/logo.jpeg" width="200" alt="Convene Logo">
+</p>
 
-## Getting Started
+Convene is a modern video conferencing application that enables seamless virtual meetings, scheduling, and team collaboration. Built with Flutter and Firebase, it provides a robust platform for remote communication.
 
-This project is a starting point for a Flutter application.
+## 📱 Screenshots
 
-A few resources to get you started if this is your first Flutter project:
+<p align="center">
+  <img src="screenshots/login.jpeg" width="200" alt="Login Screen">
+  <img src="screenshots/home.jpeg" width="200" alt="Home Screen">
+  <img src="screenshots/meetings.jpeg" width="200" alt="Meeting Screen">
+  <img src="screenshots/schedule.jpeg" width="200" alt="Schedule Screen">
+</p>
 
-- [Lab: Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Cookbook: Useful Flutter samples](https://docs.flutter.dev/cookbook)
+## ✨ Features
 
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+- **Quick Meetings**
+  - Create instant meetings with one tap
+  - Join meetings using room codes
+  - End-to-end encrypted video calls
+
+- **Meeting Management**
+  - Schedule future meetings
+  - Send automatic invitations
+  - Meeting history tracking
+  - Calendar integration
+
+- **Smart Notifications**
+  - Meeting reminders
+  - Custom notification sounds
+  - Vibration patterns
+  - Email notifications
+
+- **User Experience**
+  - Google Sign-In integration
+  - Dark/Light theme
+  - Custom accent colors
+  - Intuitive UI with animations
+
+## 🛠️ Technical Details
+
+### Built With
+- Flutter 3.6.0+
+- Firebase Authentication
+- Cloud Firestore
+- Jitsi Meet SDK
+
+
+
+## 🚀 Getting Started
+
+### Prerequisites
+- Flutter SDK (3.6.0 or higher)
+- Firebase account
+- Android Studio / Xcode
+
+
+
+## 📱 Supported Platforms
+- Android
+- iOS
+
+
+
