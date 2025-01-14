@@ -120,3 +120,93 @@ class HistoryMeetingScreen extends StatelessWidget {
     );
   }
 }
+
+class MeetingHistoryCard extends StatelessWidget {
+  final String roomName;
+  final String date;
+  final String duration;
+  final int participants;
+  final VoidCallback onJoinAgain;
+
+  const MeetingHistoryCard({
+    required this.roomName,
+    required this.date,
+    required this.duration,
+    required this.participants,
+    required this.onJoinAgain,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      margin: EdgeInsets.symmetric(vertical: 8, horizontal: 16),
+      decoration: BoxDecoration(
+        color: secondaryBackgroundColor,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.1),
+            blurRadius: 8,
+            offset: Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Padding(
+        padding: EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(Icons.meeting_room, color: buttonColor),
+                SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    roomName,
+                    style: TextStyle(
+                      color: textColor,
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+                TextButton(
+                  onPressed: onJoinAgain,
+                  child: Text('Join Again'),
+                  style: TextButton.styleFrom(
+                    foregroundColor: buttonColor,
+                  ),
+                ),
+              ],
+            ),
+            Divider(),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                _buildInfoItem(Icons.calendar_today, date),
+                _buildInfoItem(Icons.timer, duration),
+                _buildInfoItem(Icons.people, '$participants participants'),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildInfoItem(IconData icon, String text) {
+    return Row(
+      children: [
+        Icon(icon, size: 16, color: textColor.withOpacity(0.7)),
+        SizedBox(width: 4),
+        Text(
+          text,
+          style: TextStyle(
+            color: textColor.withOpacity(0.7),
+            fontSize: 12,
+          ),
+        ),
+      ],
+    );
+  }
+}

@@ -25,6 +25,29 @@ class _VideoCallScreenState extends State<VideoCallScreen> {
   final User? user = FirebaseAuth.instance.currentUser;
   String? _lastUsedRoom;
 
+  final features = [
+    {
+      'icon': Icons.security,
+      'title': 'End-to-End Encrypted',
+      'description': 'Your meetings are secure',
+    },
+    {
+      'icon': Icons.record_voice_over,
+      'title': 'HD Audio Quality',
+      'description': 'Crystal clear audio',
+    },
+    {
+      'icon': Icons.hd,
+      'title': 'HD Video',
+      'description': 'High quality video calls',
+    },
+    {
+      'icon': Icons.screen_share,
+      'title': 'Screen Sharing',
+      'description': 'Share your screen instantly',
+    },
+  ];
+
   @override
   void initState() {
     super.initState();
@@ -55,22 +78,70 @@ class _VideoCallScreenState extends State<VideoCallScreen> {
         userDisplayName: user?.displayName ?? 'User',
         userEmail: user?.email,
         featureFlags: {
+          // Video & Audio
+          "resolution": 1080,  // Set resolution to 720p
+          "audio-mute.enabled": true,
+          "video-mute.enabled": true,
+          "audio-only.enabled": true,
+          
+          // UI Elements
+          "meeting-name.enabled": true,
+          "meeting-password.enabled": false,
+          "overflow-menu.enabled": true,
+          "toolbox.enabled": true,
+          "toolbox.alwaysVisible": true,
+          
+          // Features
           "chat.enabled": true,
           "invite.enabled": true,
           "recording.enabled": false,
           "live-streaming.enabled": false,
-          "meeting-name.enabled": true,
-          "meeting-password.enabled": false,
-          "pip.enabled": false,
           "raise-hand.enabled": true,
           "tile-view.enabled": true,
-          "toolbox.enabled": true,
-          "welcome-page.enabled": false,
-          "unsaferoomwarning.enabled": false,
+          "filmstrip.enabled": true,
+          "participants.enabled": true,
+          
+          // Disable unnecessary features
+          "calendar.enabled": false,
+          "help.enabled": false,
+          "ios.recording.enabled": false,
+          "ios.screensharing.enabled": false,
           "prejoinpage.enabled": false,
+          "welcomepage.enabled": false,
+          "unsaferoomwarning.enabled": false,
           "moderator.enabled": true,
         },
       );
+
+      // Display room code in a snackbar
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Row(
+              children: [
+                Text('Room Code: $roomCode'),
+                const Spacer(),
+                IconButton(
+                  icon: const Icon(Icons.copy, color: Colors.white),
+                  onPressed: () {
+                    Clipboard.setData(ClipboardData(text: roomCode));
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('Room code copied to clipboard')),
+                    );
+                  },
+                ),
+              ],
+            ),
+            duration: const Duration(seconds: 10),
+            action: SnackBarAction(
+              label: 'Dismiss',
+              onPressed: () {
+                ScaffoldMessenger.of(context).hideCurrentSnackBar();
+              },
+            ),
+          ),
+        );
+      }
 
       await JitsiMeetWrapper.joinMeeting(options: options);
 
@@ -275,6 +346,62 @@ class _VideoCallScreenState extends State<VideoCallScreen> {
     }
   }
 
+  Widget _buildFeaturesList() {
+    return ListView.builder(
+      shrinkWrap: true,
+      physics: NeverScrollableScrollPhysics(),
+      itemCount: features.length,
+      itemBuilder: (context, index) {
+        return Container(
+          margin: EdgeInsets.symmetric(vertical: 8),
+          padding: EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: secondaryBackgroundColor,
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Row(
+            children: [
+              Container(
+                padding: EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: buttonColor.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Icon(
+                  features[index]['icon'] as IconData,
+                  color: buttonColor,
+                ),
+              ),
+              SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      features[index]['title'] as String,
+                      style: TextStyle(
+                        color: textColor,
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    Text(
+                      features[index]['description'] as String,
+                      style: TextStyle(
+                        color: textColor.withOpacity(0.7),
+                        fontSize: 14,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -451,6 +578,9 @@ class _VideoCallScreenState extends State<VideoCallScreen> {
                       ),
                     ),
                     const SizedBox(height: 32),
+
+                    // Features List
+                    _buildFeaturesList(),
 
                     // Join Button
                     SizedBox(
