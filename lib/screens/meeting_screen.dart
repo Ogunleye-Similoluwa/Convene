@@ -211,18 +211,23 @@ class _MeetingScreenState extends State<MeetingScreen> {
       
       User? user = FirebaseAuth.instance.currentUser;
       if (user != null) {
-        // Store meeting details in Firestore
-        await FirebaseFirestore.instance.collection('meetings').add({
-          'roomName': roomName,
-          'userId': user.uid,
-          'userName': user.displayName ?? '',
-          'userEmail': user.email ?? '',
-          'createdAt': FieldValue.serverTimestamp(),
-        });
+        try {
+          // Store meeting details in Firestore
+          await FirebaseFirestore.instance.collection('meetings').add({
+            'roomName': roomName,
+            'userId': user.uid,
+            'userName': user.displayName ?? '',
+            'userEmail': user.email ?? '',
+            'createdAt': FieldValue.serverTimestamp(),
+          });
+        } catch (firestoreError) {
+          // If Firestore fails, still allow the meeting to proceed
+          print('Firestore error: $firestoreError');
+        }
 
         if (!mounted) return;
         
-        // Pass the room code to VideoCallScreen
+        // Continue with the meeting even if Firestore fails
         Navigator.push(
           context,
           MaterialPageRoute(

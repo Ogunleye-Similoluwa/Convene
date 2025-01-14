@@ -74,6 +74,7 @@ android {
         targetSdkVersion 33
         versionCode 1
         versionName "1.0"
+        multiDexEnabled true
     }
 
     buildTypes {
@@ -91,7 +92,6 @@ flutter {
 
 dependencies {
     implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk7:$kotlin_version"
-    implementation 'androidx.window:window:1.0.0'
-    implementation 'androidx.window:window-java:1.0.0'
-    implementation 'io.agora.rtc:full-sdk:4.2.2'
+    implementation 'androidx.multidex:multidex:2.0.1'
+    // Remove Agora dependencies if any
 }

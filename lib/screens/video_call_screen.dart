@@ -1,16 +1,13 @@
-import 'package:agora_rtc_engine/agora_rtc_engine.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:jitsi_meet_wrapper/jitsi_meet_wrapper.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:animated_emoji/animated_emoji.dart';
 import '../utils/colors.dart';
 import '../utils/utils.dart';
 import '../services/permission_service.dart';
 import 'package:permission_handler/permission_handler.dart';
-
-// You'll need to get this from your Agora Console
-const String appId = "2dd1e869fc9f4bb480c6bfcbc71f8aef";
 
 class VideoCallScreen extends StatefulWidget {
   final String? roomCode;
@@ -27,10 +24,6 @@ class _VideoCallScreenState extends State<VideoCallScreen> {
   bool isLoading = false;
   final User? user = FirebaseAuth.instance.currentUser;
   String? _lastUsedRoom;
-  
-  int? _remoteUid;
-  bool _localUserJoined = false;
-  late RtcEngine _engine;
 
   @override
   void initState() {
@@ -40,39 +33,51 @@ class _VideoCallScreenState extends State<VideoCallScreen> {
     }
     _loadLastUsedRoom();
     _checkPermissions();
-    _initializeAgora();
   }
 
-  Future<void> _initializeAgora() async {
-    // Create RTC Engine instance
-    _engine = createAgoraRtcEngine();
-    await _engine.initialize(const RtcEngineContext(
-      appId: appId,
-      channelProfile: ChannelProfileType.channelProfileLiveBroadcasting,
-    ));
+  Future<void> _joinMeeting() async {
+    try {
+      final roomCode = roomController.text.trim();
+      
+      if (roomCode.isEmpty) {
+        showSnackBar(context, 'Please enter a room code', isError: true);
+        return;
+      }
 
-    _engine.registerEventHandler(
-      RtcEngineEventHandler(
-        onJoinChannelSuccess: (RtcConnection connection, int elapsed) {
-          debugPrint("Local user joined");
-          setState(() {
-            _localUserJoined = true;
-          });
+      setState(() => isLoading = true);
+
+      var options = JitsiMeetingOptions(
+        serverUrl: 'https://meet.jit.si',
+        roomNameOrUrl: roomCode,
+        featureFlags: {
+
         },
-        onUserJoined: (RtcConnection connection, int remoteUid, int elapsed) {
-          debugPrint("Remote user joined");
-          setState(() {
-            _remoteUid = remoteUid;
-          });
-        },
-        onUserOffline: (RtcConnection connection, int remoteUid, UserOfflineReasonType reason) {
-          debugPrint("Remote user left");
-          setState(() {
-            _remoteUid = null;
-          });
-        },
-      ),
-    );
+        userDisplayName: user?.displayName ?? 'User',
+        userEmail: user?.email,
+        isAudioMuted: isAudioMuted,
+        isVideoMuted: isVideoMuted,
+        userAvatarUrl: user?.photoURL,
+      );
+
+      await JitsiMeetWrapper.joinMeeting(options: options);
+
+      // Store meeting details in Firestore
+      await FirebaseFirestore.instance.collection('meetings').add({
+        'roomName': roomCode,
+        'userId': user?.uid,
+        'userName': user?.displayName ?? 'User',
+        'userEmail': user?.email ?? '',
+        'timestamp': FieldValue.serverTimestamp(),
+      });
+
+    } catch (error) {
+      debugPrint('Error joining meeting: $error');
+      showSnackBar(context, 'Failed to join meeting: $error', isError: true);
+    } finally {
+      if (mounted) {
+        setState(() => isLoading = false);
+      }
+    }
   }
 
   Future<void> _loadLastUsedRoom() async {
@@ -246,64 +251,6 @@ class _VideoCallScreenState extends State<VideoCallScreen> {
         ],
       ),
     );
-  }
-
-  Future<void> _joinMeeting() async {
-    try {
-      final roomCode = roomController.text.trim();
-      
-      if (roomCode.isEmpty) {
-        showSnackBar(context, 'Please enter a room code', isError: true);
-        return;
-      }
-
-      setState(() => isLoading = true);
-
-      // Configure video encoding parameters
-      await _engine.setVideoEncoderConfiguration(
-        const VideoEncoderConfiguration(
-          dimensions: VideoDimensions(width: 1920, height: 1080),
-          frameRate: 30,
-          bitrate: 3000,
-        ),
-      );
-
-      // Set client role
-      await _engine.setClientRole(role: ClientRoleType.clientRoleBroadcaster);
-
-      // Enable video
-      await _engine.enableVideo();
-      await _engine.enableAudio();
-
-      // Set audio and video states based on user preferences
-      await _engine.muteLocalAudioStream(isAudioMuted);
-      await _engine.muteLocalVideoStream(isVideoMuted);
-
-      // Join the channel
-      await _engine.joinChannel(
-        token: '',
-        channelId: roomCode,
-        uid: 0,
-        options: const ChannelMediaOptions(),
-      );
-
-      // Store meeting details in Firestore
-      await FirebaseFirestore.instance.collection('meetings').add({
-        'roomName': roomCode,
-        'userId': user?.uid,
-        'userName': user?.displayName ?? 'User',
-        'userEmail': user?.email ?? '',
-        'timestamp': FieldValue.serverTimestamp(),
-      });
-
-    } catch (error) {
-      debugPrint('Error joining meeting: $error');
-      showSnackBar(context, 'Failed to join meeting: $error', isError: true);
-    } finally {
-      if (mounted) {
-        setState(() => isLoading = false);
-      }
-    }
   }
 
   void _pasteFromClipboard() async {
@@ -528,29 +475,6 @@ class _VideoCallScreenState extends State<VideoCallScreen> {
               ),
             ),
           ),
-          // Video views
-          if (_remoteUid != null)
-            AgoraVideoView(
-              controller: VideoViewController.remote(
-                rtcEngine: _engine,
-                canvas: VideoCanvas(uid: _remoteUid),
-                connection: RtcConnection(channelId: roomController.text),
-              ),
-            ),
-          if (_localUserJoined)
-            Align(
-              alignment: Alignment.topLeft,
-              child: SizedBox(
-                width: 100,
-                height: 150,
-                child: AgoraVideoView(
-                  controller: VideoViewController(
-                    rtcEngine: _engine,
-                    canvas: const VideoCanvas(uid: 0),
-                  ),
-                ),
-              ),
-            ),
         ],
       ),
     );
@@ -607,8 +531,6 @@ class _VideoCallScreenState extends State<VideoCallScreen> {
 
   @override
   void dispose() {
-    _engine.leaveChannel();
-    _engine.release();
     roomController.dispose();
     super.dispose();
   }
