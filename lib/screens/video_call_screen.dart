@@ -47,16 +47,29 @@ class _VideoCallScreenState extends State<VideoCallScreen> {
       setState(() => isLoading = true);
 
       var options = JitsiMeetingOptions(
-        serverUrl: 'https://meet.jit.si',
         roomNameOrUrl: roomCode,
-        featureFlags: {
-
-        },
-        userDisplayName: user?.displayName ?? 'User',
-        userEmail: user?.email,
+        serverUrl: "https://meet.element.io",
+        subject: "Meeting with ${user?.displayName ?? 'User'}",
         isAudioMuted: isAudioMuted,
         isVideoMuted: isVideoMuted,
-        userAvatarUrl: user?.photoURL,
+        userDisplayName: user?.displayName ?? 'User',
+        userEmail: user?.email,
+        featureFlags: {
+          "chat.enabled": true,
+          "invite.enabled": true,
+          "recording.enabled": false,
+          "live-streaming.enabled": false,
+          "meeting-name.enabled": true,
+          "meeting-password.enabled": false,
+          "pip.enabled": false,
+          "raise-hand.enabled": true,
+          "tile-view.enabled": true,
+          "toolbox.enabled": true,
+          "welcome-page.enabled": false,
+          "unsaferoomwarning.enabled": false,
+          "prejoinpage.enabled": false,
+          "moderator.enabled": true,
+        },
       );
 
       await JitsiMeetWrapper.joinMeeting(options: options);
