@@ -127,6 +127,7 @@ class _ScheduleMeetingScreenState extends State<ScheduleMeetingScreen> {
     return Scaffold(
       backgroundColor: backgroundColor,
       appBar: AppBar(
+        automaticallyImplyLeading: false,
         backgroundColor: backgroundColor,
         elevation: 0,
         title: Text(

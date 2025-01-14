@@ -1,5 +1,6 @@
 import 'package:convene/screens/notification_preferences_screen.dart';
 import 'package:convene/screens/schedule_meeting_screen.dart';
+import 'package:convene/screens/settings_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:convene/screens/history_meeting_screen.dart';
@@ -27,13 +28,8 @@ class _HomeScreenState extends State<HomeScreen> {
     MeetingScreen(),
     HistoryMeetingScreen(),
     ScheduleMeetingScreen(),
-    NotificationPreferencesScreen(),
-    Builder(
-      builder: (context) => CustomButton(
-        text: 'Log Out',
-        onPressed: () => CustomButton.logout(context),
-      ),
-    ),
+    // NotificationPreferencesScreen(),
+    SettingsScreen(),
   ];
 
   @override
@@ -55,14 +51,14 @@ class _HomeScreenState extends State<HomeScreen> {
             icon: Icon(
               Icons.comment_bank,
             ),
-            label: 'Meet & Char',
+            label: 'Meet',
           ),
 
           BottomNavigationBarItem(
             icon: Icon(
               Icons.lock_clock,
             ),
-            label: 'Meetings',
+            label: 'History',
           ),
           BottomNavigationBarItem(
             icon: Icon(
@@ -70,12 +66,7 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
             label: 'Schedule',
           ),
-          BottomNavigationBarItem(
-            icon: Icon(
-              Icons.notifications,
-            ),
-            label: 'Notifications',
-          ),
+          
           BottomNavigationBarItem(
             icon: Icon(
               Icons.settings_outlined,
