@@ -109,6 +109,7 @@ class MainScreen extends StatelessWidget {
                         'Login',
                         style: TextStyle(
                           fontSize: 16,
+                          color: textColor,
                           fontWeight: FontWeight.bold,
                         ),
                       ),
@@ -128,7 +129,7 @@ class MainScreen extends StatelessWidget {
                       child: Text(
                         'Create Account',
                         style: TextStyle(
-                          color: buttonColor,
+                          color: textColor,
                           fontSize: 16,
                           fontWeight: FontWeight.bold,
                         ),

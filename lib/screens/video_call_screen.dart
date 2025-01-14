@@ -1,3 +1,5 @@
+import 'package:convene/widgets/animated_list_item.dart';
+import 'package:convene/widgets/animated_ripple_card.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:jitsi_meet_wrapper/jitsi_meet_wrapper.dart';
@@ -352,51 +354,24 @@ class _VideoCallScreenState extends State<VideoCallScreen> {
       physics: NeverScrollableScrollPhysics(),
       itemCount: features.length,
       itemBuilder: (context, index) {
-        return Container(
-          margin: EdgeInsets.symmetric(vertical: 8),
-          padding: EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: secondaryBackgroundColor,
-            borderRadius: BorderRadius.circular(12),
-          ),
-          child: Row(
-            children: [
-              Container(
-                padding: EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: buttonColor.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Icon(
-                  features[index]['icon'] as IconData,
-                  color: buttonColor,
-                ),
+        return AnimatedListItem(
+          index: index,
+          child: Column(children: [AnimatedRippleCard(
+            onTap: () {},
+            child: Container(
+              padding: const EdgeInsets.all(24),
+              child: Column(
+                children: [
+                  Icon(features[index]['icon'] as IconData),
+                  Text(features[index]['title'] as String),
+                  Text(features[index]['description'] as String),
+                ],
               ),
-              SizedBox(width: 16),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      features[index]['title'] as String,
-                      style: TextStyle(
-                        color: textColor,
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    Text(
-                      features[index]['description'] as String,
-                      style: TextStyle(
-                        color: textColor.withOpacity(0.7),
-                        fontSize: 14,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
+            ),
+            ),
+
+            SizedBox(height: 10),
+          ])
         );
       },
     );
@@ -580,7 +555,7 @@ class _VideoCallScreenState extends State<VideoCallScreen> {
                     const SizedBox(height: 32),
 
                     // Features List
-                    _buildFeaturesList(),
+                    // _buildFeaturesList(),
 
                     // Join Button
                     SizedBox(
@@ -589,7 +564,7 @@ class _VideoCallScreenState extends State<VideoCallScreen> {
                       child: ElevatedButton(
                         onPressed: isLoading ? null : _joinMeeting,
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: buttonColor,
+                          backgroundColor: Colors.white,
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(16),
                           ),
@@ -600,7 +575,7 @@ class _VideoCallScreenState extends State<VideoCallScreen> {
                                 width: 24,
                                 height: 24,
                                 child: CircularProgressIndicator(
-                                  color: Colors.white,
+                                  color: backgroundColor,
                                   strokeWidth: 2,
                                 ),
                               )
@@ -608,6 +583,7 @@ class _VideoCallScreenState extends State<VideoCallScreen> {
                                 'Join Meeting',
                                 style: TextStyle(
                                   fontSize: 16,
+                                  color: backgroundColor,
                                   fontWeight: FontWeight.bold,
                                 ),
                               ),

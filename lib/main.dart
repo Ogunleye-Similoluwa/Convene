@@ -1,3 +1,4 @@
+import 'package:convene/services/theme_customization_service.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:convene/resources/auth_methods.dart';
@@ -11,52 +12,53 @@ import 'package:convene/screens/signin.dart';
 import 'package:convene/screens/splash_screen.dart';
 import 'package:convene/screens/login.dart';
 import 'package:convene/screens/forgot_password_screen.dart';
+import 'package:convene/services/theme_config_service.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   
   await Firebase.initializeApp();
-  runApp(const MyApp());
-}
-
-class MyApp extends StatelessWidget {
-  const MyApp({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return MaterialApp(
-      debugShowCheckedModeBanner: false,
-      title: 'Convene: Video Conferencce Apph@',
-      theme: ThemeData.dark().copyWith(
-        scaffoldBackgroundColor: backgroundColor,
+  
+  final themeConfig = await ThemeConfigService().getConfig();
+  final themeCustomization = ThemeCustomizationService();
+  
+  runApp(MaterialApp(
+    debugShowCheckedModeBanner: false,
+    title: 'Convene: Video Conferencce Apph@',
+    theme: themeCustomization.getCustomTheme(
+      ThemeData(
+        useMaterial3: themeConfig.useMaterial3,
+        textTheme: GoogleFonts.getTextTheme(themeConfig.fontFamily),
       ),
-      routes: {
-        '/splash-screen': (context) => ZoomSplashScreen(),
-        '/login': (context) => LoginScreen(),
-        '/signIn': (context) => SignInScreen(),
-        '/home': (context) => HomeScreen(),
-        '/main': (context) => MainScreen(),
-        '/video-call': (context) => VideoCallScreen(),
-        '/history-meeting-screen': (context) => HistoryMeetingScreen(),
-        '/meeting-screen': (context) => MeetingScreen(), 
-        '/forgot-password': (context) => const ForgotPasswordScreen(),
-      },
-      initialRoute: '/splash-screen',
-      home: StreamBuilder(
-          stream: AuthMethods().authChanges,
-          builder: (context, snapshot) {
-            if (snapshot.connectionState == ConnectionState.waiting) {
-              return const Center(
-                child: CircularProgressIndicator(),
-              );
-            }
-            if (snapshot.hasData) {
-              return const HomeScreen();
-            }
-            return const MainScreen();
-          }),
-    );
-  }
+      await themeCustomization.getAccentColor(),
+    ),
+    routes: {
+      '/splash-screen': (context) => ZoomSplashScreen(),
+      '/login': (context) => LoginScreen(),
+      '/signIn': (context) => SignInScreen(),
+      '/home': (context) => HomeScreen(),
+      '/main': (context) => MainScreen(),
+      '/video-call': (context) => VideoCallScreen(),
+      '/history-meeting-screen': (context) => HistoryMeetingScreen(),
+      '/meeting-screen': (context) => MeetingScreen(), 
+      '/forgot-password': (context) => const ForgotPasswordScreen(),
+    },
+    initialRoute: '/splash-screen',
+    home: StreamBuilder(
+        stream: AuthMethods().authChanges,
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Center(
+              child: CircularProgressIndicator(),
+            );
+          }
+          if (snapshot.hasData) {
+            return const HomeScreen();
+          }
+          return const MainScreen();
+        }),
+  ));
 }
 // import 'package:flutter/material.dart';
 // import 'package:jitsi_meet_wrapper/jitsi_meet_wrapper.dart';

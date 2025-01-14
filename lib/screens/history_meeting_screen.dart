@@ -1,4 +1,9 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:convene/screens/video_call_screen.dart';
+import 'package:convene/utils/colors.dart';
+import 'package:convene/widgets/animated_list_item.dart';
+import 'package:convene/widgets/animated_meeting_card.dart';
+import 'package:convene/widgets/page_transitions.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
@@ -52,66 +57,20 @@ class HistoryMeetingScreen extends StatelessWidget {
             final formattedDate =
                 createdAt != null ? DateFormat.yMMMd().format(createdAt) : '';
 
-            return Card(
-              elevation: 5,
-              margin: EdgeInsets.symmetric(vertical: 10, horizontal: 15),
-              child: ListTile(
-                title: Text('Room Name: $roomName'),
-                subtitle: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text('User Email: $userEmail'),
-                    Text('User ID: $userId'),
-                    Text('User Name: $userName'),
-                    Text('Joined on $formattedDate'),
-                  ],
-                ),
-                trailing: IconButton(
-                  icon: Icon(Icons.delete),
-                  color: Colors.red, // Danger color
-                  onPressed: () async {
-                    // Show a confirmation dialog
-                    bool shouldDelete = await showDialog(
-                      context: context,
-                      builder: (context) => AlertDialog(
-                        title: Text('Delete Meeting'),
-                        content: Text(
-                            'Are you sure you want to delete this meeting?'),
-                        actions: <Widget>[
-                          TextButton(
-                            onPressed: () => Navigator.of(context).pop(false),
-                            child: Text('Cancel'),
-                          ),
-                          TextButton(
-                            onPressed: () => Navigator.of(context).pop(true),
-                            child: Text('Delete'),
-                          ),
-                        ],
-                      ),
-                    );
-
-                    // Delete the meeting if the user confirmed
-                    if (shouldDelete == true) {
-                      try {
-                        await FirebaseFirestore.instance
-                            .collection('meetings')
-                            .doc(documents[index].id)
-                            .delete();
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: Text('Meeting deleted successfully'),
-                          ),
-                        );
-                      } catch (error) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: Text('Error deleting meeting: $error'),
-                          ),
-                        );
-                      }
-                    }
-                  },
-                ),
+            return AnimatedListItem(
+              index: index,
+              child: AnimatedMeetingCard(
+                title: 'Room: $roomName',
+                subtitle: 'Joined on $formattedDate',
+                icon: Icons.meeting_room,
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    SlidePageRoute(
+                      page: VideoCallScreen(roomCode: roomName),
+                    ),
+                  );
+                },
               ),
             );
           },

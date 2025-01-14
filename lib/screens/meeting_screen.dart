@@ -1,6 +1,7 @@
 import 'dart:math';
 import 'package:convene/screens/video_call_screen.dart';
 import 'package:convene/services/permission_service.dart';
+import 'package:convene/widgets/page_transitions.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 // import 'package:jitsi_meet_wrapper/jitsi_meet_wrapper.dart';
@@ -250,8 +251,13 @@ class _MeetingScreenState extends State<MeetingScreen> {
     }
   }
 
-  joinMeeting(BuildContext context) {
-    Navigator.pushNamed(context, '/video-call');
+  void joinMeeting(BuildContext context) {
+    Navigator.push(
+      context,
+      SlidePageRoute(
+        page: VideoCallScreen(),
+      ),
+    );
   }
 
   @override

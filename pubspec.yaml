@@ -41,6 +41,12 @@ dependencies:
   cloud_firestore: ^5.6.1
   permission_handler: ^11.3.0
   jitsi_meet_wrapper: ^0.2.0+1
+  shared_preferences: ^2.3.5
+  flutter_local_notifications: ^18.0.1
+  timezone: ^0.10.0
+  just_audio: ^0.9.43
+  vibration: ^2.0.1
+  google_fonts: ^6.2.1
  
 
 dev_dependencies:

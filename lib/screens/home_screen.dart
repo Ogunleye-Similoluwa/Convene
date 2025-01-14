@@ -1,3 +1,5 @@
+import 'package:convene/screens/notification_preferences_screen.dart';
+import 'package:convene/screens/schedule_meeting_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:convene/screens/history_meeting_screen.dart';
@@ -24,6 +26,8 @@ class _HomeScreenState extends State<HomeScreen> {
   List<Widget> pages = [
     MeetingScreen(),
     HistoryMeetingScreen(),
+    ScheduleMeetingScreen(),
+    NotificationPreferencesScreen(),
     Builder(
       builder: (context) => CustomButton(
         text: 'Log Out',
@@ -35,13 +39,9 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        backgroundColor: backgroundColor,
-        elevation: 0,
-        title: const Text('Meet & Chat'),
-        centerTitle: true,
-      ),
+     
       body: pages[_page],
+      backgroundColor: backgroundColor,
       bottomNavigationBar: BottomNavigationBar(
         backgroundColor: footerColor,
         selectedItemColor: Colors.white,
@@ -57,11 +57,24 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
             label: 'Meet & Char',
           ),
+
           BottomNavigationBarItem(
             icon: Icon(
               Icons.lock_clock,
             ),
             label: 'Meetings',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(
+              Icons.lock_clock,
+            ),
+            label: 'Schedule',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(
+              Icons.notifications,
+            ),
+            label: 'Notifications',
           ),
           BottomNavigationBarItem(
             icon: Icon(
